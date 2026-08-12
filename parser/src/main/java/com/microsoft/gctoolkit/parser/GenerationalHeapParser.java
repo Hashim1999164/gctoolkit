@@ -65,7 +65,8 @@ public class GenerationalHeapParser extends PreUnifiedGCLogParser implements Sim
     private static final Logger LOGGER = Logger.getLogger(GenerationalHeapParser.class.getName());
 
     // Cached for the CMS remark/weak-reference split-bug path; avoid recompiling on every parse call.
-    private static final Pattern DURATION_GROUP_PATTERN = Pattern.compile(".* " + PAUSE_TIME);
+    // [^\n]* preserves last-match semantics of greedy .* without a ReDoS hotspot.
+    private static final Pattern DURATION_GROUP_PATTERN = Pattern.compile("[^\\n]* " + PAUSE_TIME);
 
     private ParNew parNewForwardReference;
     private GarbageCollectionTypes garbageCollectionTypeForwardReference;
@@ -629,9 +630,11 @@ public class GenerationalHeapParser extends PreUnifiedGCLogParser implements Sim
         gcCauseForwardReference = GCCause.PROMOTION_FAILED;
         ArrayList<Integer> blocks = new ArrayList<>();
         GCLogTrace block = PARNEW_PROMOTION_FAILURE_SIZE_BLOCK.parse(line);
-        do {
-            blocks.add(block.getIntegerGroup(1));
-        } while (block.hasNext());
+        if (block != null) {
+            do {
+                blocks.add(block.getIntegerGroup(1));
+            } while (block.hasNext());
+        }
         promotionFailureSizesForwardReference = new int[blocks.size()];
         for (int index = 0; index < blocks.size(); index++)
             promotionFailureSizesForwardReference[index] = blocks.get(index);
@@ -1820,7 +1823,8 @@ public class GenerationalHeapParser extends PreUnifiedGCLogParser implements Sim
     private void precleanTimedoutWithCards(GCLogTrace trace, String line) {
         abortPrecleanDueToTime = true;
         GCLogTrace concurrentPhase = new GCParseRule("X",CMS_PHASE_END).parse(line);
-        endOfConcurrentPhase(concurrentPhase, concurrentPhase.getDateTimeStamp(), 0);
+        if (concurrentPhase != null)
+            endOfConcurrentPhase(concurrentPhase, concurrentPhase.getDateTimeStamp(), 0);
     }
 
     private void shouldCollectConcurrent(GCLogTrace trace, String line) {
@@ -2069,6 +2073,10 @@ public class GenerationalHeapParser extends PreUnifiedGCLogParser implements Sim
 
     private void endConcurrentPrecleanWithReferenceProcessing(GCLogTrace trace, String line) {
         GCLogTrace concurrentBlock = CONCURRENT_PHASE_END_BLOCK.parse(line);
+        if (concurrentBlock == null) {
+            LOGGER.warning("Unable to extract data from " + trace.toString());
+            return;
+        }
         try {
             publish(new ConcurrentPreClean(startOfConcurrentPhase, concurrentBlock.getDoubleGroup(11), concurrentBlock.getDoubleGroup(7), concurrentBlock.getDoubleGroup(8)));
         } catch (Throwable t) {
