@@ -64,6 +64,9 @@ public class GenerationalHeapParser extends PreUnifiedGCLogParser implements Sim
 
     private static final Logger LOGGER = Logger.getLogger(GenerationalHeapParser.class.getName());
 
+    // Cached for the CMS remark/weak-reference split-bug path; avoid recompiling on every parse call.
+    private static final Pattern DURATION_GROUP_PATTERN = Pattern.compile(".* " + PAUSE_TIME);
+
     private ParNew parNewForwardReference;
     private GarbageCollectionTypes garbageCollectionTypeForwardReference;
     private GCCause gcCauseForwardReference;
@@ -1917,8 +1920,7 @@ public class GenerationalHeapParser extends PreUnifiedGCLogParser implements Sim
      */
     public void splitRemarkReferenceWithWeakReferenceSplitBug(GCLogTrace trace, String line) {
         GCLogTrace remarkTrace = REMARK_CLAUSE.parse(line);
-        Pattern durationGroupPattern = Pattern.compile(".* " + PAUSE_TIME);
-        Matcher matcher = durationGroupPattern.matcher(line);
+        Matcher matcher = DURATION_GROUP_PATTERN.matcher(line);
         double duration = 0.0d;
         if (matcher.find()) {
             duration = Double.parseDouble(matcher.group(matcher.groupCount()));
