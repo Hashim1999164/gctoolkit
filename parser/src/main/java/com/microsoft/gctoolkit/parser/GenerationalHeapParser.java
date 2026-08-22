@@ -44,8 +44,6 @@ import java.util.Set;
 import java.util.function.BiConsumer;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 import static com.microsoft.gctoolkit.parser.unified.UnifiedG1GCPatterns.WEAK_PROCESSING;
 
@@ -63,10 +61,6 @@ import static com.microsoft.gctoolkit.parser.unified.UnifiedG1GCPatterns.WEAK_PR
 public class GenerationalHeapParser extends PreUnifiedGCLogParser implements SimplePatterns, ICMSPatterns, SerialPatterns, ParallelPatterns {
 
     private static final Logger LOGGER = Logger.getLogger(GenerationalHeapParser.class.getName());
-
-    // Cached for the CMS remark/weak-reference split-bug path; avoid recompiling on every parse call.
-    // [^\n]* preserves last-match semantics of greedy .* without a ReDoS hotspot.
-    private static final Pattern DURATION_GROUP_PATTERN = Pattern.compile("[^\\n]* " + PAUSE_TIME);
 
     private ParNew parNewForwardReference;
     private GarbageCollectionTypes garbageCollectionTypeForwardReference;
@@ -1924,10 +1918,10 @@ public class GenerationalHeapParser extends PreUnifiedGCLogParser implements Sim
      */
     public void splitRemarkReferenceWithWeakReferenceSplitBug(GCLogTrace trace, String line) {
         GCLogTrace remarkTrace = REMARK_CLAUSE.parse(line);
-        Matcher matcher = DURATION_GROUP_PATTERN.matcher(line);
+        GCLogTrace durationTrace = SPLIT_REMARK_REFERENCE_BUG_DURATION.parse(line);
         double duration = 0.0d;
-        if (matcher.find()) {
-            duration = Double.parseDouble(matcher.group(matcher.groupCount()));
+        if (durationTrace != null) {
+            duration = durationTrace.getPauseTime();
         }
         CMSRemark collection = new CMSRemark(getClock(), GCCause.CMS_FINAL_REMARK, duration);
         MemoryPoolSummary tenured = getTotalOccupancyWithTotalHeapSizeSummary(remarkTrace, 1);

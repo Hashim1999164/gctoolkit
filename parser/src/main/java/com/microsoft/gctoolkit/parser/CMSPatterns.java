@@ -399,6 +399,7 @@ public interface CMSPatterns extends SharedPatterns {
 
     //8239.784: [Rescan (parallel) , 0.0444432 secs]8239.828: [weak refs processing8239.828: [SoftReference, 0 refs, 0.0000687 secs]8239.828: [WeakReference, 0 refs, 0.0000638 secs]8239.829: [FinalReference, 556 refs, 0.0008823 secs]8239.829: [PhantomReference, 0 refs, 0.0000657 secs]8239.830: [JNI Weak Reference, 0.0000995 secs], 0.0013332 secs]8239.830: [class unloading, 0.1926177 secs]8240.022: [scrub symbol table, 0.0376581 secs]8240.060: [scrub string table, 0.6722322 secs][1 CMS-remark: 6705100K(12523968K)] 6815820K(13520768K), 1.8735975 secs] [Times: user=7.84 sys=0.08, real=1.87 secs]
     GCParseRule SPLIT_REMARK_REFERENCE_BUG = new GCParseRule("SPLIT_REMARK_REFERENCE_BUG", "^" + DATE_TIMESTAMP + "\\[Rescan \\(parallel\\) , " + PAUSE_TIME + "\\]" + DATE_TIMESTAMP + "\\[weak refs processing" + DATE_TIMESTAMP);
+    GCParseRule SPLIT_REMARK_REFERENCE_BUG_DURATION = new GCParseRule("SPLIT_REMARK_REFERENCE_BUG_DURATION", "[^\\n]* " + PAUSE_TIME);
     GCParseRule SPLIT_REMARK_REFERENCE = new GCParseRule("SPLIT_REMARK_REFERENCE", "^" + RESCAN_BLOCK + WEAK_REF_BLOCK + CLASS_UNLOADING_BLOCK + SYMBOL_TABLE_SCRUB_BLOCK + STRING_TABLE_SCRUB_BLOCK + REMARK_BLOCK);
     GCParseRule FULL_SPLIT_BY_CONCURRENT_PHASE = new GCParseRule("FULL_SPLIT_BY_CONCURRENT_PHASE", "^" + DATE_TIMESTAMP + "\\[CMS" + CMS_PHASE_END);
 
