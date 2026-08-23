@@ -39,6 +39,7 @@ import com.microsoft.gctoolkit.time.DateTimeStamp;
 
 import java.util.AbstractMap;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.BiConsumer;
@@ -622,16 +623,17 @@ public class GenerationalHeapParser extends PreUnifiedGCLogParser implements Sim
         scavengeTimeStamp = getClock();
         garbageCollectionTypeForwardReference = GarbageCollectionTypes.ParNewPromotionFailed;
         gcCauseForwardReference = GCCause.PROMOTION_FAILED;
-        ArrayList<Integer> blocks = new ArrayList<>();
+        int[] blocks = new int[4];
+        int blockCount = 0;
         GCLogTrace block = PARNEW_PROMOTION_FAILURE_SIZE_BLOCK.parse(line);
         if (block != null) {
             do {
-                blocks.add(block.getIntegerGroup(1));
+                if (blockCount == blocks.length)
+                    blocks = Arrays.copyOf(blocks, blocks.length * 2);
+                blocks[blockCount++] = block.getIntegerGroup(1);
             } while (block.hasNext());
         }
-        promotionFailureSizesForwardReference = new int[blocks.size()];
-        for (int index = 0; index < blocks.size(); index++)
-            promotionFailureSizesForwardReference[index] = blocks.get(index);
+        promotionFailureSizesForwardReference = Arrays.copyOf(blocks, blockCount);
         GCLogTrace memorySummary = BEFORE_AFTER_CONFIGURED_PAUSE_RULE.parse(line);
         youngMemoryPoolSummaryForwardReference = memorySummary.getOccupancyBeforeAfterWithMemoryPoolSizeSummary(1);
         scavengeDurationForwardReference = memorySummary.getDuration();
